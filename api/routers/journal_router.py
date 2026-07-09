@@ -46,27 +46,46 @@ async def get_all_entries(entry_service: EntryService = Depends(get_entry_servic
 
 @router.get("/entries/{entry_id}")
 async def get_entry(entry_id: str, entry_service: EntryService = Depends(get_entry_service)):
+    """Get a single journal entry by ID.
+
+    Returns the entry as a flat JSON object, or 404 if no entry has that id.
     """
-    TODO: Implement this endpoint to return a single journal entry by ID
+    # ---------------------------------------------------------------
+    # ORIGINAL STARTER TODO (kept for reference — Task 2a, completed)
+    #
+    #   TODO: Implement this endpoint to return a single journal entry by ID
+    #
+    #   Steps to implement:
+    #   1. Use entry_service.get_entry(entry_id) to fetch the entry
+    #   2. If entry is None, raise HTTPException with status_code=404
+    #   3. Return the entry directly (not wrapped in a dict)
+    #
+    #   Example response (status 200):
+    #   {
+    #       "id": "uuid-string",
+    #       "work": "...",
+    #       "struggle": "...",
+    #       "intention": "...",
+    #       "created_at": "...",
+    #       "updated_at": "..."
+    #   }
+    #
+    #   Hint: Check the update_entry endpoint for similar patterns
+    #
+    #   Was: raise HTTPException(status_code=501, detail="Not implemented...")
+    # ---------------------------------------------------------------
 
-    Steps to implement:
-    1. Use entry_service.get_entry(entry_id) to fetch the entry
-    2. If entry is None, raise HTTPException with status_code=404
-    3. Return the entry directly (not wrapped in a dict)
+    # Step 1 — delegate to the service layer. Returns dict | None.
+    entry = await entry_service.get_entry(entry_id)
 
-    Example response (status 200):
-    {
-        "id": "uuid-string",
-        "work": "...",
-        "struggle": "...",
-        "intention": "...",
-        "created_at": "...",
-        "updated_at": "..."
-    }
+    # Step 2 — the DB signals "no row" with None. HTTP signals it with 404.
+    # This router is the only layer that knows how to speak HTTP.
+    if entry is None:
+        raise HTTPException(status_code=404, detail="Entry not found")
 
-    Hint: Check the update_entry endpoint for similar patterns
-    """
-    raise HTTPException(status_code=501, detail="Not implemented - complete this endpoint!")
+    # Step 3 — return bare, NOT wrapped. Tests assert entry["id"], not
+    # result["entry"]["id"]. Wrapping is the most common way to fail here.
+    return entry
 
 
 @router.patch("/entries/{entry_id}")
@@ -106,7 +125,8 @@ async def delete_entry(entry_id: str, entry_service: EntryService = Depends(get_
 
     Hint: Look at how the update_entry endpoint checks for existence
     """
-    raise HTTPException(status_code=501, detail="Not implemented - complete this endpoint!")
+    raise HTTPException(
+        status_code=501, detail="Not implemented - complete this endpoint!")
 
 
 @router.delete("/entries")
@@ -139,4 +159,5 @@ async def analyze_entry(entry_id: str, entry_service: EntryService = Depends(get
             detail="LLM analysis not yet implemented - see api/services/llm_service.py",
         ) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Analysis failed: {e!s}") from e
+        raise HTTPException(
+            status_code=500, detail=f"Analysis failed: {e!s}") from e
