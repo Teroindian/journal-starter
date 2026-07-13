@@ -3,7 +3,7 @@ from collections.abc import AsyncGenerator
 from fastapi import APIRouter, Depends, HTTPException
 
 from api.config import Settings, get_settings
-from api.models.entry import AnalysisResponse, Entry, EntryCreate
+from api.models.entry import AnalysisResponse, Entry, EntryCreate, EntryUpdate
 from api.repositories.postgres_repository import PostgresDB
 from api.services.entry_service import EntryService
 from api.services.llm_service import analyze_journal_entry
@@ -90,20 +90,41 @@ async def get_entry(entry_id: str, entry_service: EntryService = Depends(get_ent
 
 @router.patch("/entries/{entry_id}")
 async def update_entry(
-    entry_id: str, entry_update: dict, entry_service: EntryService = Depends(get_entry_service)
+    entry_id: str,
+    entry_update: EntryUpdate,
+    entry_service: EntryService = Depends(get_entry_service),
 ):
-    """Update a journal entry.
+    """Update a journal entry. Body validated by EntryUpdate (Task 3)."""
+    # ---------------------------------------------------------------
+    # ORIGINAL STARTER TODO (kept for reference — Task 3, completed)
+    #
+    #   TODO (Task 3): Replace entry_update: dict with entry_update: EntryUpdate
+    #   (import it from api.models.entry) so PATCH requests are validated the
+    #   same way POST requests are. Without this, PATCH happily accepts
+    #   empty strings and 300-character bodies — see TestUpdateEntry in
+    #   tests/test_api.py.
+    #
+    #   Done: param is now EntryUpdate. FastAPI validates it before this
+    #   function body runs, so bad input returns 422 automatically —
+    #   no manual validation code needed here.
+    # ---------------------------------------------------------------
 
-    TODO (Task 3): Replace ``entry_update: dict`` with ``entry_update: EntryUpdate``
-    (import it from ``api.models.entry``) so PATCH requests are validated the
-    same way POST requests are. Without this, PATCH happily accepts
-    empty strings and 300-character bodies — see ``TestUpdateEntry`` in
-    tests/test_api.py.
-    """
-    result = await entry_service.update_entry(entry_id, entry_update)
+    # Step 1 — convert the validated model back into a dict for the service.
+    #   entry_update arrives as an EntryUpdate instance (FastAPI built it).
+    #   model_dump() turns it back into a plain dict the service expects.
+    #   exclude_unset=True: include ONLY the fields the caller actually sent,
+    #   so omitted fields keep their existing values (true partial update).
+    #   Without it, unsent fields become None and would wipe existing data.
+    result = await entry_service.update_entry(
+        entry_id, entry_update.model_dump(exclude_unset=True)
+    )
+
+    # Step 2 — existence check. The service returns a falsy value when no
+    #   row matched that id → translate that into HTTP 404.
     if not result:
         raise HTTPException(status_code=404, detail="Entry not found")
 
+    # Step 3 — return the updated entry (the service hands back the new row).
     return result
 
 
