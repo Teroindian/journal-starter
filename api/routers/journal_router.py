@@ -107,26 +107,45 @@ async def update_entry(
     return result
 
 
-# TODO: Implement DELETE /entries/{entry_id} endpoint to remove a specific entry
-# Return 404 if entry not found
+# DELETE /entries/{entry_id} — remove a specific entry. Returns 404 if not found.
+# Task 2b, completed.
 @router.delete("/entries/{entry_id}")
 async def delete_entry(entry_id: str, entry_service: EntryService = Depends(get_entry_service)):
-    """
-    TODO: Implement this endpoint to delete a specific journal entry
+    """Delete a single journal entry by ID."""
+    # ---------------------------------------------------------------
+    # ORIGINAL STARTER TODO (kept for reference — Task 2b, completed)
+    #
+    #   TODO: Implement this endpoint to delete a specific journal entry
+    #
+    #   Steps to implement:
+    #   1. Use entry_service.get_entry(entry_id) to check if entry exists
+    #   2. If entry is None, raise HTTPException with status_code=404
+    #   3. Use entry_service.delete_entry(entry_id) to delete the entry
+    #   4. Return a success response (status 200)
+    #
+    #   Example response (status 200):
+    #   {"detail": "Entry deleted successfully"}
+    #
+    #   Hint: Look at how the update_entry endpoint checks for existence
+    #
+    #   Was: raise HTTPException(status_code=501, detail="Not implemented...")
+    # ---------------------------------------------------------------
 
-    Steps to implement:
-    1. Use entry_service.get_entry(entry_id) to check if entry exists
-    2. If entry is None, raise HTTPException with status_code=404
-    3. Use entry_service.delete_entry(entry_id) to delete the entry
-    4. Return a success response (status 200)
+    # Step 1 — existence check. DELETE on a missing row succeeds silently
+    # in SQL (0 rows affected, no error), so we must check first or a
+    # bogus id would wrongly return 200.
+    entry = await entry_service.get_entry(entry_id)
 
-    Example response (status 200):
-    {"detail": "Entry deleted successfully"}
+    # Step 2 — translate "no row" into HTTP 404.
+    if entry is None:
+        raise HTTPException(status_code=404, detail="Entry not found")
 
-    Hint: Look at how the update_entry endpoint checks for existence
-    """
-    raise HTTPException(
-        status_code=501, detail="Not implemented - complete this endpoint!")
+    # Step 3 — the actual delete. DELETE FROM entries WHERE id = $1.
+    await entry_service.delete_entry(entry_id)
+
+    # Step 4 — wrapped dict, NOT a bare return. Nothing to hand back after
+    # deletion, and the test asserts this exact shape.
+    return {"detail": "Entry deleted successfully"}
 
 
 @router.delete("/entries")
