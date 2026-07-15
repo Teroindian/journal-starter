@@ -115,9 +115,7 @@ async def update_entry(
     #   exclude_unset=True: include ONLY the fields the caller actually sent,
     #   so omitted fields keep their existing values (true partial update).
     #   Without it, unsent fields become None and would wipe existing data.
-    result = await entry_service.update_entry(
-        entry_id, entry_update.model_dump(exclude_unset=True)
-    )
+    result = await entry_service.update_entry(entry_id, entry_update.model_dump(exclude_unset=True))
 
     # Step 2 — existence check. The service returns a falsy value when no
     #   row matched that id → translate that into HTTP 404.
@@ -199,5 +197,4 @@ async def analyze_entry(entry_id: str, entry_service: EntryService = Depends(get
             detail="LLM analysis not yet implemented - see api/services/llm_service.py",
         ) from e
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Analysis failed: {e!s}") from e
+        raise HTTPException(status_code=500, detail=f"Analysis failed: {e!s}") from e

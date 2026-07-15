@@ -15,6 +15,7 @@ in your .env file. Settings are loaded by ``api.config.Settings``.
 import json
 
 from openai import AsyncOpenAI
+from openai.types.chat import ChatCompletionMessageParam
 
 from api.config import get_settings
 
@@ -92,7 +93,7 @@ async def analyze_journal_entry(
         '"summary" (a 2-sentence string), '
         '"topics" (a list of 2-4 short strings).'
     )
-    messages = [
+    messages: list[ChatCompletionMessageParam] = [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": entry_text},
     ]
