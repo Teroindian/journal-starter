@@ -24,11 +24,9 @@ class AnalysisResponse(BaseModel):
     """Response model for journal entry analysis."""
 
     entry_id: str = Field(description="ID of the analyzed entry")
-    sentiment: str = Field(
-        description="Sentiment: positive, negative, or neutral")
+    sentiment: str = Field(description="Sentiment: positive, negative, or neutral")
     summary: str = Field(description="2 sentence summary of the entry")
-    topics: list[str] = Field(
-        description="2-4 key topics mentioned in the entry")
+    topics: list[str] = Field(description="2-4 key topics mentioned in the entry")
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(UTC),
         description="Timestamp when the analysis was created",
@@ -54,18 +52,15 @@ class EntryCreate(BaseModel):
     # ---------------------------------------------------------------
     work: JournalText = Field(
         description="What did you work on today?",
-        json_schema_extra={
-            "example": "Studied FastAPI and built my first API endpoints"},
+        json_schema_extra={"example": "Studied FastAPI and built my first API endpoints"},
     )
     struggle: JournalText = Field(
         description="What's one thing you struggled with today?",
-        json_schema_extra={
-            "example": "Understanding async/await syntax and when to use it"},
+        json_schema_extra={"example": "Understanding async/await syntax and when to use it"},
     )
     intention: JournalText = Field(
         description="What will you study/work on tomorrow?",
-        json_schema_extra={
-            "example": "Practice PostgreSQL queries and database design"},
+        json_schema_extra={"example": "Practice PostgreSQL queries and database design"},
     )
 
 
@@ -92,25 +87,20 @@ class EntryUpdate(BaseModel):
 
     # Step 1: JournalText | None  -> optional; validation only runs on a value
     # Step 2: default=None        -> field can be omitted from the request body
-    work: JournalText | None = Field(
-        default=None, description="Updated work text.")
-    struggle: JournalText | None = Field(
-        default=None, description="Updated struggle text.")
-    intention: JournalText | None = Field(
-        default=None, description="Updated intention text.")
+    work: JournalText | None = Field(default=None, description="Updated work text.")
+    struggle: JournalText | None = Field(default=None, description="Updated struggle text.")
+    intention: JournalText | None = Field(default=None, description="Updated intention text.")
 
 
 class Entry(BaseModel):
     id: str = Field(
         default_factory=lambda: str(uuid4()), description="Unique identifier for the entry (UUID)."
     )
-    work: str = Field(..., max_length=256,
-                      description="What did you work on today?")
+    work: str = Field(..., max_length=256, description="What did you work on today?")
     struggle: str = Field(
         ..., max_length=256, description="What's one thing you struggled with today?"
     )
-    intention: str = Field(..., max_length=256,
-                           description="What will you study/work on tomorrow?")
+    intention: str = Field(..., max_length=256, description="What will you study/work on tomorrow?")
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(UTC),
         description="Timestamp when the entry was created.",
