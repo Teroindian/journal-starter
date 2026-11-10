@@ -1,0 +1,8 @@
+.env
+.env-sample
+.git
+.venv
+.devcontainer
+tests
+docs
+*.md
