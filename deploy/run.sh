@@ -12,8 +12,8 @@ ENV_FILE=$(mktemp)
 {
   echo "DATABASE_URL=$(get /journal/DATABASE_URL)"
   echo "OPENAI_API_KEY=$(get /journal/OPENAI_API_KEY)"
-  echo "OPENAI_BASE_URL=https://models.github.ai/inference"
-  echo "OPENAI_MODEL=openai/gpt-4o-mini"
+  echo "OPENAI_BASE_URL=$(get /journal/OPENAI_BASE_URL)"
+  echo "OPENAI_MODEL=$(get /journal/OPENAI_MODEL)"
 } > "$ENV_FILE"
 
 docker rm -f journal-api caddy >/dev/null 2>&1 || true
