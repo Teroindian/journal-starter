@@ -14,34 +14,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v6
-        with:
-          enable-cache: true
-
-      - name: Set up Python
-        run: uv python install 3.14
-
-      - name: Install dependencies
-        run: uv sync --locked --all-extras
-
-      - name: Ruff check
-        run: uv run ruff check .
-
-      - name: Ruff format check
-        run: uv run ruff format --check .
-
-      - name: Pyright type check
-        run: uv run pyright
-
   test:
-    name: Test
+    name: test
     runs-on: ubuntu-latest
 
     services:
@@ -65,7 +39,7 @@ jobs:
       POSTGRES_DB: career_journal
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/career_journal
       # Required by api.config.Settings so the app boots. Tests never call a
-      # real LLM — Task 4 uses an injected MockAsyncOpenAI client — so any
+      # real LLM (Task 4 uses an injected MockAsyncOpenAI client), so any
       # non-empty value works.
       OPENAI_API_KEY: ci-placeholder-not-used-by-mock
 
@@ -83,6 +57,15 @@ jobs:
       - name: Install dependencies
         run: uv sync --locked --all-extras
 
+      - name: Ruff check
+        run: uv run ruff check .
+
+      - name: Ruff format check
+        run: uv run ruff format --check .
+
+      - name: Pyright type check
+        run: uv run pyright
+
       - name: Initialize database schema
         run: |
           PGPASSWORD=postgres psql \
@@ -91,3 +74,47 @@ jobs:
 
       - name: Run tests
         run: uv run pytest -v
+
+  build:
+    name: build
+    needs: test
+    # Only publish images for code that landed on main, never for PRs.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # lets the job get a short-lived AWS token via OIDC
+    outputs:
+      image: ${{ steps.meta.outputs.image }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC, no stored keys)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set image name
+        id: meta
+        run: |
+          echo "image=${{ steps.ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY }}:${{ github.sha }}" >> "$GITHUB_OUTPUT"
+
+      - name: Build image
+        run: |
+          docker build \
+            --build-arg GIT_SHA=${{ github.sha }} \
+            -t ${{ steps.meta.outputs.image }} \
+            -t ${{ steps.ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY }}:latest \
+            .
+
+      - name: Push image
+        run: |
+          docker push ${{ steps.meta.outputs.image }}
+          docker push ${{ steps.ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY }}:latest
+          echo "Pushed ${{ steps.meta.outputs.image }}" >> "$GITHUB_STEP_SUMMARY"

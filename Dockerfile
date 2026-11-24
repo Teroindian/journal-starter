@@ -8,6 +8,9 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-install-project
 
 COPY api ./api
+# Commit SHA baked in at build time (used later by GET /version)
+ARG GIT_SHA=unknown
+ENV GIT_SHA=$GIT_SHA
 
 RUN useradd --system --no-create-home app
 USER app
