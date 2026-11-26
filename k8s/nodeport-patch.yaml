@@ -1,0 +1,5 @@
+# Pins the NodePort to 30080, the port Kind maps to localhost (kind-config.yaml)
+spec:
+  ports:
+    - port: 8000
+      nodePort: 30080
