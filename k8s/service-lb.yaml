@@ -1,0 +1,12 @@
+# Public entry point on EKS: AWS creates a load balancer for this Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: journal-api
+spec:
+  type: LoadBalancer
+  selector:
+    app: journal-api
+  ports:
+    - port: 80
+      targetPort: 8000
