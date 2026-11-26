@@ -1,0 +1,62 @@
+# Postgres for the Journal API (test data only: no persistent volume)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: journal-db
+  labels:
+    app: journal-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: journal-db
+  template:
+    metadata:
+      labels:
+        app: journal-db
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: career_journal
+            - name: POSTGRES_USER
+              value: postgres
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: journal-secrets
+                  key: POSTGRES_PASSWORD
+          volumeMounts:
+            - name: init-sql # runs database_setup.sql on first start
+              mountPath: /docker-entrypoint-initdb.d
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "postgres", "-d", "career_journal"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+      volumes:
+        - name: init-sql
+          configMap:
+            name: journal-db-init
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: journal-db # the API reaches Postgres at journal-db:5432
+spec:
+  selector:
+    app: journal-db
+  ports:
+    - port: 5432
+      targetPort: 5432
